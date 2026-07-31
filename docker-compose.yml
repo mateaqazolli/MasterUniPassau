@@ -5,8 +5,11 @@ services:
       dockerfile: docker/app/Dockerfile
     container_name: annealbn-ce-app
     working_dir: /workspace
+    # Sources are baked into the image at build time (self-contained image).
+    # Only the results directory is shared with the host, so experiment
+    # outputs appear in ./results/ while the running code stays sealed.
     volumes:
-      - .:/workspace
+      - ./results:/workspace/results
     environment:
       PYTHONPATH: /workspace:/workspace/bnsl-qa:/workspace/bnsl
       POSTGRES_HOST: postgres
@@ -23,7 +26,9 @@ services:
     command: /bin/bash
 
   postgres:
-    image: postgres:16
+    build:
+      context: .
+      dockerfile: docker/postgres/Dockerfile
     container_name: annealbn-ce-postgres
     restart: unless-stopped
     environment:
@@ -31,12 +36,12 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: postgres
       PGDATA: /var/lib/postgresql/data/pgdata
-    ports:
-      - "5432:5432"
+    # No host port mapping: everything runs inside the compose network and
+    # pgweb (port 8081) provides database inspection from the host.
     volumes:
       - annealbn_postgres_data:/var/lib/postgresql/data
-      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
-      - ./bnsl/datasets/data:/datasets:ro
+      # Runtime data for the optional Movie Link extra (multi-GB IMDB
+      # download, not part of the thesis evaluation; see docs/USAGE.md).
       - ./imdb_data:/imdb_data:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d nhanes"]

@@ -1,5 +1,14 @@
 #!/usr/bin/env bash
 
+# Chow-Liu baseline benchmark: runs a bnsl cardinality-estimation script and
+# augments its output with PostgreSQL planner estimates.
+#
+# Non-interactive mode (used by scripts/run_*.sh): set both
+#   BENCH_DB      PostgreSQL database to query for planner estimates
+#   BENCH_SCRIPT  cardinality_estimation/cardinality_estimation_<dataset>.py
+# to skip the menus. The CSV the Python script loads is selected via the
+# CSV_FILE environment variable (see the script headers).
+
 # Configuration
 
 DB_HOST="${POSTGRES_HOST:-postgres}"
@@ -18,6 +27,10 @@ echo "==========================================="
 
 # 1. FETCH DATABASES FROM POSTGRES
 
+if [ -n "${BENCH_DB:-}" ]; then
+selected_db="$BENCH_DB"
+echo "Using database: $selected_db"
+else
 echo "--- Fetching available databases from PostgreSQL at $DB_HOST:$DB_PORT ---"
 db_list=($(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d postgres -t -A -c "SELECT datname FROM pg_database WHERE datistemplate = false AND datname <> 'postgres' ORDER BY datname;"))
 
@@ -35,11 +48,19 @@ else
 echo "Invalid selection."
 fi
 done
+fi
 
 # 2. FIND PYTHON FILES
 
 # 2. FIND PYTHON FILES
 
+if [ -n "${BENCH_SCRIPT:-}" ]; then
+if [ ! -f "$BENCH_SCRIPT" ]; then
+echo "Error: BENCH_SCRIPT not found: $BENCH_SCRIPT"
+exit 1
+fi
+target_files=("$BENCH_SCRIPT")
+else
 files=(cardinality_estimation/cardinality_estimation_*.py)
 if [ ${#files[@]} -eq 0 ]; then
 echo "No cardinality_estimation_*.py files found."
@@ -61,6 +82,7 @@ case "$file" in
     ;;
 esac
 done
+fi
 
 # 3. EXECUTION LOOP
 for script in "${target_files[@]}"; do
@@ -120,8 +142,11 @@ if [ -f "$output_csv" ]; then
     done
 
     echo -e "\nSUCCESS: Comparison saved to: $final_csv"
+    # Machine-readable result path for orchestration scripts
+    echo "BENCH_FINAL_CSV=$final_csv"
 else
     echo "Error: Python script failed to generate a result file."
+    exit 1
 fi
 
 done

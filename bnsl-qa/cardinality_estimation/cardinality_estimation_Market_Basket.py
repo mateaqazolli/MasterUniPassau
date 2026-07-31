@@ -25,7 +25,7 @@ os.makedirs(output_dir, exist_ok=True)
 # 1. LOAD THE MARKET BASKET DATA
 # ==========================================
 print(f"Loading Market Basket dataset for Graph {graph_index}...")
-df = pd.read_csv("../bnsl/datasets/data/DataMining_MarketBasket_100.csv")
+df = pd.read_csv(os.environ.get("CE_DATASET_CSV", "../bnsl/datasets/data/DataMining_MarketBasket_100.csv"))
 
 columns = ['Beer', 'Bread', 'Cola', 'Diapers', 'Eggs', 'Milk']
 total_rows = len(df)

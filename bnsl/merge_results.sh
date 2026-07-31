@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# Merges SA, SQA, Chow-Liu/PostgreSQL and optional random-control results
+# into combined_results_<dataset>_<timestamp>.{csv,png}.
+#
+# Non-interactive mode (used by scripts/run_*.sh): set
+#   SA_FILE, SQA_FILE, BN_FILE   input CSVs (BN_FILE is the *_final.csv)
+#   RNG_FILE                     optional random-control CSV
+# to skip all menus. MERGE_OUTPUT_DIR controls where the combined files are
+# written (default: current directory).
+
 # Paths
 SA_SQA_DIR="../bnsl-qa/dispatch_output/results"
 BN_DIR="card_results"
@@ -7,6 +16,11 @@ RNG_MATRIX_DIR="../bnsl-qa/RNG_Matrix/results"
 echo "==========================================="
 echo "   Card-Estimation Results Merger          "
 echo "==========================================="
+
+if [ -n "${SA_FILE:-}" ] && [ -n "${SQA_FILE:-}" ] && [ -n "${BN_FILE:-}" ]; then
+    python3 merge_csv_logic.py "$SA_FILE" "$SQA_FILE" "$BN_FILE" "${RNG_FILE:-NONE}"
+    exit $?
+fi
 
 # 1. Choose SA file
 echo -e "\n--- Step 1: Select SA Result File ---"

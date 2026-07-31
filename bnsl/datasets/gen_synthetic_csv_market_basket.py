@@ -1,3 +1,5 @@
+import os
+
 import pandas as pd
 import numpy as np
 
@@ -17,7 +19,7 @@ base_transactions = np.array([
 #Generate 100 rows by randomly sampling from the 5 base transactions
 
 np.random.seed(42)
-num_rows = 100
+num_rows = int(os.environ.get("NUM_ROWS", "100"))
 
 #Randomly pick indices from 0 to 4, 100 times
 sampled_indices = np.random.choice(len(base_transactions), size=num_rows, replace=True)
@@ -29,7 +31,7 @@ generated_matrix = base_transactions[sampled_indices]
 df = pd.DataFrame(generated_matrix, columns=items)
 
 
-csv_filename = "data/DataMining_MarketBasket_100.csv"
+csv_filename = os.environ.get("CSV_FILENAME", "data/DataMining_MarketBasket_100.csv")
 df.to_csv(csv_filename, index=False)
 
 print(f"Successfully generated {num_rows} rows based on the textbook templates!")

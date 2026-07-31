@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 
-csv_filename = "../bnsl/datasets/data/DataMining_MarketBasket_100.csv"
+csv_filename = os.environ.get("CSV_FILENAME", "../bnsl/datasets/data/DataMining_MarketBasket_100.csv")
 df = pd.read_csv(csv_filename)
 
 print(f"Loaded {len(df)} rows from {csv_filename}")
@@ -20,7 +20,7 @@ dummy_matrix = " ".join(["0"] * dummy_length)
 
 
 os.makedirs("qa-datasets", exist_ok=True)
-output_file = "qa-datasets/MarketBasket100.txt"
+output_file = os.environ.get("OUTPUT_FILE", "qa-datasets/MarketBasket100.txt")
 
 with open(output_file, 'w') as f:
 

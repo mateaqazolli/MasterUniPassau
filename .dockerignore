@@ -20,8 +20,24 @@ bnslqa-env/
 # Old unrelated repository material
 job/
 
-# Local/generated outputs
+# Large runtime downloads (optional Movie Link extra)
+imdb_data/
+
+# Documentation not needed inside the image
+docs/
+Notes.md
+
+# Local/generated outputs — regenerated inside the container; keeping them
+# out ensures the image is a clean snapshot of the committed code
 results/
 plots/
 images/
 *.log
+bnsl-qa/dispatch_output/
+bnsl-qa/q-error_output/
+bnsl-qa/RNG_Matrix/
+bnsl-qa/tmp_cardinality_runs/
+bnsl/card_results/
+bnsl/output_bn/
+bnsl/graphs/
+bnsl/combined_results_*

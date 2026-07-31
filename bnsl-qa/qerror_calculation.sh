@@ -3,6 +3,14 @@ set -euo pipefail
 
 # The selected dataset is used for result naming.
 # The cardinality script itself must be consistent with the selected dataset.
+#
+# Non-interactive mode (used by scripts/run_*.sh): set all of
+#   CARD_SCRIPT  cardinality_estimation/cardinality_estimation_<Dataset>.py
+#   DATASET_CSV  path to the CSV relation (used for result naming)
+#   MATRIX_DIR   dispatch_output/solver_outputs/<SA|SQA>/<run folder>
+#   QERROR_DB    PostgreSQL database for true-cardinality queries
+# to skip all menus. The last output line is a machine-readable
+# QERROR_RESULT_FILE path for orchestration scripts.
 
 BASE_DIR="./dispatch_output/solver_outputs"
 OUTPUT_BASE="q-error_output"
@@ -22,6 +30,22 @@ mkdir -p "$OUTPUT_BASE"
 mkdir -p "$TMP_DIR"
 
 timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
+
+if [ -n "${CARD_SCRIPT:-}" ] && [ -n "${DATASET_CSV:-}" ] && [ -n "${MATRIX_DIR:-}" ] && [ -n "${QERROR_DB:-}" ]; then
+    if [ ! -f "$CARD_SCRIPT" ]; then
+        echo "Error: CARD_SCRIPT not found: $CARD_SCRIPT"
+        exit 1
+    fi
+    if [ ! -d "$MATRIX_DIR" ]; then
+        echo "Error: MATRIX_DIR not found: $MATRIX_DIR"
+        exit 1
+    fi
+    DATASET="$DATASET_CSV"
+    DATASET_NAME=$(basename "$DATASET_CSV" .csv)
+    METHOD=$(basename "$(dirname "$MATRIX_DIR")")
+    selected_db="$QERROR_DB"
+    echo "Script: $CARD_SCRIPT | Dataset: $DATASET_NAME | Matrices: $MATRIX_DIR ($METHOD) | DB: $selected_db"
+else
 
 echo "==============================="
 echo " Select Cardinality Script"
@@ -117,6 +141,8 @@ select selected_db in "${db_list[@]}"; do
         echo "Invalid selection."
     fi
 done
+
+fi
 
 # Extract executions and reads from folder name.
 BASENAME=$(basename "$MATRIX_DIR")
@@ -237,3 +263,6 @@ echo "Finished"
 echo "Results saved in:"
 echo "$RESULT_FILE"
 echo "================================"
+
+# Machine-readable result path for orchestration scripts
+echo "QERROR_RESULT_FILE=$RESULT_FILE"
