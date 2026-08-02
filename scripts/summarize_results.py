@@ -128,6 +128,14 @@ def write_table(exp_dir, number, kind, df):
 def stable_estimates(truth, est_df):
     cols = graph_columns(est_df)
     merged = truth.merge(est_df, on="join_key", how="left", suffixes=("", "_est"))
+    matched = int(merged[cols[0]].notna().sum()) if cols else 0
+    if matched < len(truth) and len(est_df) == len(truth):
+        # Some datasets phrase the same workload differently per pipeline
+        # (e.g. NHANES: raw values in the solver queries vs encoded bins in
+        # the Chow-Liu queries), so the text join fails. The workload order
+        # is fixed and identical across pipelines, so align by position.
+        est_pos = est_df.reset_index(drop=True)
+        return [modal_estimate(row, cols) for _, row in est_pos.iterrows()]
     return [
         modal_estimate(row, cols) if pd.notna(row[cols[0]]) else None
         for _, row in merged.iterrows()
