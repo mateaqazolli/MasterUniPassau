@@ -6,10 +6,12 @@ services:
     container_name: annealbn-ce-app
     working_dir: /workspace
     # Sources are baked into the image at build time (self-contained image).
-    # Only the results directory is shared with the host, so experiment
-    # outputs appear in ./results/ while the running code stays sealed.
+    # Only runtime data is shared with the host: experiment outputs appear
+    # in ./results/, and the optional IMDB download lives in ./imdb_data so
+    # it survives container rebuilds and is downloaded at most once.
     volumes:
       - ./results:/workspace/results
+      - ./imdb_data:/workspace/imdb_data
     environment:
       PYTHONPATH: /workspace:/workspace/bnsl-qa:/workspace/bnsl
       POSTGRES_HOST: postgres

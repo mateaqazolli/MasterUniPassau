@@ -712,23 +712,22 @@ cd /workspace
 bash docker/postgres/import_imdb.sh
 ```
 
-The script downloads the IMDB archive if it is not already present, extracts it into:
+The script downloads the IMDB archive **at most once**: `imdb_data/` is a
+host mount, so the archive survives `docker compose down` and rebuilds, and
+every run checks for the existing file before downloading. An interrupted
+download is kept as `imdb.tgz.part` and resumed on the next run.
+
+Because the Movie Link workload uses exactly one IMDB table, the script
+extracts and imports **only** `movie_link`:
 
 ```text
-imdb_data/extracted/
+imdb_data/extracted/movie_link.csv   →   database "imdb", table "movie_link"
 ```
 
-and imports the tables into the PostgreSQL database:
-
-```text
-imdb
-```
-
-The imported tables include, among others:
-
-```text
-movie_link, movie_info, movie_keyword, title, name, cast_info
-```
+Only this fast import step repeats after a database wipe (for example
+`reproduce_all.sh`, which runs `docker compose down -v`); the 1.2 GB
+download does not. The full JOB schema is kept for reference at
+`docker/postgres/imdb/schema.sql`.
 
 ### 1.7.2. Export the `movie_link` Table to CSV
 
