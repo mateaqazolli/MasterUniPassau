@@ -216,17 +216,27 @@ EOF
                 sql="${queries_sql[$i]}"
                 i=$((i+1))
 
-                true_card=$(
-                    psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$selected_db" \
-                    -t -A -c "EXPLAIN ANALYZE $sql" |
+                # Execute the query, surfacing PostgreSQL's exact error if
+                # it fails — never record 0 as a real cardinality.
+                pg_err=$(mktemp)
+                if ! explain_out=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$selected_db" \
+                        -t -A -c "EXPLAIN ANALYZE $sql" 2>"$pg_err"); then
+                    echo "ERROR: PostgreSQL rejected the query:"
+                    echo "  Query: $sql"
+                    sed 's/^/  /' "$pg_err"
+                    rm -f "$pg_err"
+                    exit 1
+                fi
+                rm -f "$pg_err"
+
+                true_card=$(echo "$explain_out" |
                     grep "actual time" |
                     head -1 |
-                    sed -E 's/.*rows=([0-9]+).*/\1/'
-                )
+                    sed -E 's/.*rows=([0-9]+).*/\1/' || true)
 
                 if [[ -z "$true_card" ]]; then
-                    true_card=0
-                    echo "Warning: Could not get true cardinality for query: $sql"
+                    echo "ERROR: could not parse the true cardinality from EXPLAIN ANALYZE output for query: $sql"
+                    exit 1
                 fi
 
                 qerr=$(python3 - <<PYEOF

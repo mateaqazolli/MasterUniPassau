@@ -121,8 +121,16 @@ if [ -f "$output_csv" ]; then
         clean_sa_query=$(echo "$sa_query" | tr -d '"')
         clean_pg_query=$(echo "$pg_query" | tr -d '"')
 
-        # Execute PG query
-        pg_raw_json=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$selected_db" -t -c "EXPLAIN (FORMAT JSON) $clean_pg_query")
+        # Execute PG query, surfacing PostgreSQL's exact error if it fails
+        pg_err=$(mktemp)
+        if ! pg_raw_json=$(psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$selected_db" -t -c "EXPLAIN (FORMAT JSON) $clean_pg_query" 2>"$pg_err"); then
+            echo "ERROR: PostgreSQL rejected the query:"
+            echo "  Query: $clean_pg_query"
+            sed 's/^/  /' "$pg_err"
+            rm -f "$pg_err"
+            exit 1
+        fi
+        rm -f "$pg_err"
 
         # Bulletproof PG row extraction
         pg_rows=$(echo "$pg_raw_json" | grep -Eo '"Plan Rows": [0-9]+' | grep -Eo '[0-9]+' | head -1)
@@ -139,7 +147,7 @@ if [ -f "$output_csv" ]; then
         echo "  [SA/Join] : $clean_sa_query"
         echo "  [PG/Exec] : $clean_pg_query"
         echo "  -> BN: $bn_est | PG: $pg_rows | True: $true_card"
-    done
+    done || exit 1
 
     echo -e "\nSUCCESS: Comparison saved to: $final_csv"
     # Machine-readable result path for orchestration scripts
