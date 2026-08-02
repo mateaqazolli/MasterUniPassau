@@ -61,6 +61,8 @@ img { max-width: 100%; border: 1px solid #ddd; margin: .5rem 0; }
 .missing { color: #c0392b; font-style: italic; }
 .note { background: #fdf6e3; border-left: 4px solid #f1c40f; padding: .6rem 1rem;
         margin: 1rem 0; font-size: .9rem; }
+.note table { margin: .5rem 0; }
+.note th, .note td { text-align: left; }
 """
 
 
@@ -137,12 +139,30 @@ def main():
 <h1>AnnealBN-CE — Reproduction Report</h1>
 <p class="meta">Generated {stamp}. Frozen thesis values on the left,
 values reproduced by this run on the right.</p>
-<div class="note">SA and SQA are stochastic solvers: reproduced structures
-and estimates are expected to be <strong>similar but not necessarily
-identical</strong> to the thesis values. The stable estimate vectors and the
-q-error orderings between estimators are the meaningful comparison, not
-bit-identical numbers. See original_results/MANIFEST.md for the exact
-file-to-table mapping.</div>
+<div class="note">
+<p>SA and SQA are stochastic solvers: reproduced structures and estimates
+are expected to be <strong>similar but not necessarily identical</strong> to
+the thesis values. Judge each table type by the right standard — the
+reproduction is successful when the stable vectors, the deterministic
+columns, and all orderings/trends line up, not when every number is
+bit-identical. See original_results/MANIFEST.md for the exact
+file-to-table mapping.</p>
+<table>
+<tr><th>Table type</th><th>Thesis tables</th><th>What must match</th></tr>
+<tr><td>Cardinality estimates</td><td>6.3, 6.5, 6.8, 6.10, 6.15</td>
+<td>The stable SA/SQA estimate vectors: exact or near-exact</td></tr>
+<tr><td>Chow–Liu and PostgreSQL columns</td><td>all</td>
+<td>Deterministic — must match exactly (same data, same pinned versions)</td></tr>
+<tr><td>Q-error summaries</td><td>6.4, 6.6, 6.9, 6.11, 6.16</td>
+<td>Min/median/max very close; the ordering between estimators must hold</td></tr>
+<tr><td>Read/trial variation</td><td>6.12, 6.13, 6.17, 6.18</td>
+<td>Structure counts may differ run to run; the trends must hold
+(more reads &rarr; more stable structures, lower q-errors)</td></tr>
+<tr><td>Random-structure check</td><td>6.14</td>
+<td>Random-side numbers differ, but annealing structures must show clearly
+lower median/max q-error than random ones</td></tr>
+</table>
+</div>
 {''.join(sections)}
 """
 
