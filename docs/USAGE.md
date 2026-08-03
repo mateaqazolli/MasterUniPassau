@@ -333,7 +333,7 @@ CSV_FILE = "data/WetGrass_variance_zero.csv"
 TABLE_NAME = "wetgrass_data"
 ```
 
-> Important: the CSV file configured here must be the same file produced by `txt_to_csv.py`. For the expected WetGrass dataset used in the thesis, this is normally `data/WetGrass_variance_zero.csv`. If `csv_to_db.py` still points to `data/WetGrass_variance_non_zero.csv`, update it before running the import.
+> Important: the CSV file configured here must be the same file produced by `txt_to_csv.py`. For the expected WetGrass dataset used in the thesis, this is `data/WetGrass_variance_zero.csv` (the script's default). All of these values can also be overridden through the `DB_NAME`, `CSV_FILE`, and `TABLE_NAME` environment variables instead of editing the file.
 
 Also ensure that the `INSERT` statement matches the table columns:
 
