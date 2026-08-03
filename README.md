@@ -7,20 +7,35 @@ simulated annealing (SA) and simulated quantum annealing (SQA), estimates
 query cardinalities from them, and compares against a Chow–Liu baseline and
 the PostgreSQL planner.
 
-This README is the reproduction blueprint: which experiment produces which
-thesis table or figure, and the single command that reproduces it. For a
+This README is the reproduction blueprint: which experiments the thesis
+reports, the order they run in, the single command that reproduces them,
+and how to compare the regenerated outputs against the thesis. For a
 detailed description of every script, dataset format, and output file, see
 [docs/USAGE.md](docs/USAGE.md). The thesis itself is at
 [docs/Master Thesis.pdf](docs/Master%20Thesis.pdf).
 
+## The reproduction workflow at a glance
+
+1. **Clone and build without errors** — one command builds self-contained
+   Docker images: the code is copied into the image at build time, and only
+   the results directory is mounted back out.
+2. **One script runs everything** — it bootstraps the containers, executes
+   experiments E0–E7 inside them in order, and exposes every artefact on
+   the host in `./results/`.
+3. **Results regenerate from the original data** — all datasets are
+   committed or generated deterministically (WetGrass: expected-value
+   generation; Market Basket: fixed seed; NHANES: committed CSV). No
+   external downloads.
+4. **Compare with the thesis** — the run ends by generating
+   `results/index.html`, which renders every reproduced table next to the
+   frozen thesis values from [original_results/](original_results/).
+
 ## Requirements
 
-- **Docker Desktop, installed and running** (tested with Docker 29,
-  Compose v2+) — the only prerequisite on every platform; everything else
-  runs inside the container
-- A few GB of disk; **no external downloads** — all datasets are committed
-  or generated deterministically (WetGrass: expected-value generation;
-  Market Basket: fixed seed; NHANES: committed CSV)
+- **Docker Desktop, installed and running** — the only prerequisite on
+  every platform; everything else runs inside the container (tested with
+  Docker 27–29, Compose v2+)
+- A few GB of free disk space
 
 ## Quick start — reproduce everything
 
@@ -29,27 +44,34 @@ git clone https://github.com/Matea166/MasterUniPassau.git
 cd MasterUniPassau
 ```
 
-Then press the button for your platform:
+Then run the entry point for your platform:
 
 | Platform | Full reproduction | Fast smoke test (headline configs only) |
 |----------|-------------------|------------------------------------------|
 | macOS / Linux | `./reproduce_all.sh` | `QUICK=1 ./reproduce_all.sh` |
 | Windows (CMD or PowerShell) | `.\reproduce_all.bat` | PowerShell: `$env:QUICK=1; .\reproduce_all.bat` |
 
-Both buttons are thin Docker wrappers around the same in-container sequence
-(`scripts/run_all.sh`), so every platform runs the identical pipeline: build
-the self-contained images (sources are copied in at build time; only
-`./results` is mounted back out), start PostgreSQL, prepare all datasets,
-run experiments E1–E6 with the exact configurations from thesis Table 6.2,
-and write every table and figure to `./results/`, ending with
-`results/index.html` — a side-by-side comparison against the thesis values.
+Both entry points are thin wrappers around the same in-container sequence
+(`scripts/run_all.sh`), so every platform runs the identical pipeline:
+build the images, start PostgreSQL, prepare all datasets, run experiments
+E1–E6 with the exact configurations from thesis Table 6.2, and write every
+table and figure to `./results/`, ending with the comparison report
+`results/index.html`.
 
-The full grid covers ~90 solver configurations (Table 6.2: read sweeps and
-trial sweeps for both SA and SQA on every dataset) and can run for several
-hours; the `QUICK` smoke test runs only the headline configuration of each
-experiment and finishes in well under an hour.
+> **Runtime disclaimer.** The full reproduction executes the complete
+> thesis grid — 84 solver configurations (read and trial sweeps for both SA
+> and SQA on every dataset) plus the baselines and the 1000-matrix
+> random-structure check — and takes **several hours** (measured:
+> 6 h 16 min on an Apple-Silicon MacBook). Plan for an overnight run, keep
+> the machine plugged in, and prevent it from sleeping (macOS:
+> `caffeinate -i ./reproduce_all.sh`; Windows: set sleep to "Never" while
+> plugged in). The `QUICK` smoke test runs one headline configuration per
+> experiment in roughly **45 minutes** including the image build and is the
+> recommended first run.
 
 ## Experiments ↔ thesis mapping
+
+`reproduce_all` runs the experiments top to bottom in this order:
 
 | ID | Experiment | Script | Output in `results/` | Thesis reference |
 |----|------------|--------|----------------------|------------------|
@@ -93,24 +115,30 @@ standard:
 | Read/trial variation | 6.12, 6.13, 6.17, 6.18 | Exact structure counts may differ run to run; the trends must hold (more reads → more stable structures, lower q-errors) |
 | Random-structure check | 6.14 | Random-side numbers will differ, but annealing structures must show clearly lower median/max q-error than random ones |
 
-The reproduction is successful when the stable vectors, the deterministic
-columns, and all orderings/trends line up — that is the meaningful claim for
-stochastic solvers, not bit-identical numbers.
+A reproduction counts as successful when the stable vectors, the
+deterministic columns, and all orderings and trends line up. For stochastic
+solvers, bit-identical numbers are not a realistic criterion.
+
+Appendix Tables B.4–B.19 (per-configuration detail listings) are not paired
+in the report; their underlying data is regenerated in full and available
+under `results/<experiment>/estimates/` — one CSV per configuration — for
+manual comparison with the thesis PDF.
 
 ## Running a single experiment
 
 ```bash
 docker compose up -d --build
-docker compose exec app bash scripts/prepare_datasets.sh   # once
-docker compose exec app bash scripts/run_wetgrass_100.sh
-docker compose exec app bash scripts/make_report.sh
+docker compose exec app bash scripts/prepare_datasets.sh   # E0, once
+docker compose exec app bash scripts/run_wetgrass_100.sh   # any experiment
+docker compose exec app bash scripts/make_report.sh        # E7, refresh report
 ```
 
 Each experiment reads its frozen configuration from `config/<name>.env`
 (dataset names, database/table, and the Table 6.2 trials/reads grid) and
 writes only to its own `results/<name>/` folder — experiments never
-overwrite each other. `QUICK=1 docker compose exec -e QUICK=1 app bash
-scripts/run_<name>.sh` runs just the headline configuration.
+overwrite each other. Run E0 first; E6's report row additionally references
+E4's outputs. `docker compose exec -e QUICK=1 app bash scripts/run_<name>.sh`
+runs just the headline configuration of one experiment.
 
 The interactive menus (`bnsl-qa/dispatch.sh`, `bnsl/cardinality_benchmarks.sh`,
 …) remain available for exploratory use inside the container; they are not
@@ -118,8 +146,8 @@ part of the reproduction path. See [docs/USAGE.md](docs/USAGE.md).
 
 **Note on Movie Link:** the repository also contains an IMDB/Movie Link
 pipeline. It is exploratory extra material — no thesis result is based on
-it — and it is deliberately not part of `reproduce_all.sh` (it would require
-a multi-GB IMDB download). See docs/USAGE.md §1.7.
+it — and it is deliberately not part of the reproduction workflow (it
+requires a ~1.2 GB IMDB download). See docs/USAGE.md §1.7.
 
 ## Licence
 

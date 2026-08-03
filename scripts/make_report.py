@@ -142,11 +142,10 @@ values reproduced by this run on the right.</p>
 <div class="note">
 <p>SA and SQA are stochastic solvers: reproduced structures and estimates
 are expected to be <strong>similar but not necessarily identical</strong> to
-the thesis values. Judge each table type by the right standard — the
-reproduction is successful when the stable vectors, the deterministic
-columns, and all orderings/trends line up, not when every number is
-bit-identical. See original_results/MANIFEST.md for the exact
-file-to-table mapping.</p>
+the thesis values. A reproduction counts as successful when the stable
+vectors, the deterministic columns, and all orderings and trends line up;
+bit-identical numbers are not a realistic criterion for stochastic solvers.
+See original_results/MANIFEST.md for the exact file-to-table mapping.</p>
 <table>
 <tr><th>Table type</th><th>Thesis tables</th><th>What must match</th></tr>
 <tr><td>Cardinality estimates</td><td>6.3, 6.5, 6.8, 6.10, 6.15</td>
