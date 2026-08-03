@@ -1,15 +1,17 @@
+import os
+
 import psycopg2
 import pandas as pd
 
-DB_NAME = "nhanes"
-DB_USER = "postgres"
-DB_PASSWORD = "postgres"
+DB_NAME = os.environ.get("DB_NAME", "nhanes")
+DB_USER = os.environ.get("POSTGRES_USER", "postgres")
+DB_PASSWORD = os.environ.get("POSTGRES_PASSWORD", "postgres")
 
-DB_HOST = "postgres"
-DB_PORT = "5432"
+DB_HOST = os.environ.get("POSTGRES_HOST", "postgres")
+DB_PORT = os.environ.get("POSTGRES_PORT", "5432")
 
-CSV_FILE = "data/NHANES_age_prediction.csv"
-TABLE_NAME = "nhanes_data"
+CSV_FILE = os.environ.get("CSV_FILE", "data/NHANES_age_prediction.csv")
+TABLE_NAME = os.environ.get("TABLE_NAME", "nhanes_data")
 # ----------------------------
 
 conn = psycopg2.connect(
@@ -24,6 +26,9 @@ cur = conn.cursor()
 
 # Read CSV
 df = pd.read_csv(CSV_FILE)
+
+# Empty the table first so repeated imports stay idempotent
+cur.execute(f"TRUNCATE TABLE {TABLE_NAME}")
 
 # Insert query
 insert_query = f"""

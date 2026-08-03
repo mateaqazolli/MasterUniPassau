@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# AnnealBN-CE pipeline dispatcher: solver runs -> unique matrices ->
+# cardinality estimation -> merged final CSV.
+#
+# Non-interactive mode (used by scripts/run_*.sh): set all of
+#   DATASET_TXT  solver TXT file, e.g. qa-datasets/WetGrass.txt
+#   SOLVER       SA or SQA
+#   TRIALS       number of independent solver executions
+#   READS        annealing reads per execution
+#   CE_SCRIPT    cardinality_estimation/cardinality_estimation_<Dataset>.py
+# and the full solve pipeline runs without menus. Leave them unset for the
+# interactive menus. The last lines of output are machine-readable
+# DISPATCH_* paths for orchestration scripts.
+
 # --- PROGRESS BAR FUNCTION ---
 progress_bar() {
     local current=$1
@@ -8,54 +21,76 @@ progress_bar() {
     local current_time=$(date +%s)
     local elapsed=$((current_time - start_time))
     local eta=0
-    
+
     if [ $current -gt 0 ]; then
         eta=$((elapsed * (total - current) / current))
     fi
-    
+
     local progress=$((current * 20 / total))
     local bar=$(printf "%-${progress}s" "#" | sed 's/ /#/g')
     local empty=$(printf "%-$((20 - progress))s" "-")
-    
+
     printf "\rProgress: [%s%s] %d/%d | Elapsed: %ds | ETA: %ds " "$bar" "$empty" "$current" "$total" "$elapsed" "$eta"
 }
+
+NONINTERACTIVE=0
+if [ -n "${DATASET_TXT:-}" ] && [ -n "${SOLVER:-}" ] && [ -n "${TRIALS:-}" ] && [ -n "${READS:-}" ] && [ -n "${CE_SCRIPT:-}" ]; then
+    NONINTERACTIVE=1
+fi
 
 # --- 1. SELECTION MENU ---
 echo "=== BNSL-QA-PYTHON AUTOMATION PIPELINE ==="
 
-echo ""
-echo "Select pipeline mode:"
-select mode in "Run solver now" "Use previous unique matrices"; do
-    if [ -n "$mode" ]; then
-        break
-    else
-        echo "Invalid option."
-    fi
-done
-
-timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
-
-if [ "$mode" = "Run solver now" ]; then
-
-    echo "Select a dataset from /datasets:"
-    select dataset_path in qa-datasets/*.txt; do
-        if [ -n "$dataset_path" ]; then
-            dataset_name=$(basename "$dataset_path" | cut -d. -f1)
+if [ "$NONINTERACTIVE" = "1" ]; then
+    mode="Run solver now"
+else
+    echo ""
+    echo "Select pipeline mode:"
+    select mode in "Run solver now" "Use previous unique matrices"; do
+        if [ -n "$mode" ]; then
             break
         else
             echo "Invalid option."
         fi
     done
+fi
 
-    echo ""
-    echo "Select Solver:"
-    select solver in "SA" "SQA"; do
-        if [ -n "$solver" ]; then break; else echo "Invalid option."; fi
-    done
+timestamp=$(date +"%Y-%m-%d_%H-%M-%S")
 
-    echo ""
-    read -p "Enter number of trials: " executions
-    read -p "Enter number of annealing reads: " reads
+if [ "$mode" = "Run solver now" ]; then
+
+    if [ "$NONINTERACTIVE" = "1" ]; then
+        dataset_path="$DATASET_TXT"
+        if [ ! -f "$dataset_path" ]; then
+            echo "Error: dataset TXT file not found: $dataset_path"
+            exit 1
+        fi
+        dataset_name=$(basename "$dataset_path" | cut -d. -f1)
+        solver="$SOLVER"
+        executions="$TRIALS"
+        reads="$READS"
+        echo "Dataset: $dataset_path | Solver: $solver | Trials: $executions | Reads: $reads"
+    else
+        echo "Select a dataset from /datasets:"
+        select dataset_path in qa-datasets/*.txt; do
+            if [ -n "$dataset_path" ]; then
+                dataset_name=$(basename "$dataset_path" | cut -d. -f1)
+                break
+            else
+                echo "Invalid option."
+            fi
+        done
+
+        echo ""
+        echo "Select Solver:"
+        select solver in "SA" "SQA"; do
+            if [ -n "$solver" ]; then break; else echo "Invalid option."; fi
+        done
+
+        echo ""
+        read -p "Enter number of trials: " executions
+        read -p "Enter number of annealing reads: " reads
+    fi
 
     # --- 2. SOLVER EXECUTION ---
     solver_out_base="dispatch_output/solver_outputs/${solver}"
@@ -142,10 +177,18 @@ num_matrices=$(wc -l < "$unique_matrix_file")
 echo "Found $num_matrices unique matrices."
 
 # --- 4. SELECT ESTIMATION SCRIPT ---
-echo -e "\nSelect the cardinality estimation script:"
-select py_script in cardinality_estimation/cardinality_estimation_*.py; do
-    if [ -n "$py_script" ]; then break; else echo "Invalid option."; fi
-done
+if [ "$NONINTERACTIVE" = "1" ]; then
+    py_script="$CE_SCRIPT"
+    if [ ! -f "$py_script" ]; then
+        echo "Error: cardinality estimation script not found: $py_script"
+        exit 1
+    fi
+else
+    echo -e "\nSelect the cardinality estimation script:"
+    select py_script in cardinality_estimation/cardinality_estimation_*.py; do
+        if [ -n "$py_script" ]; then break; else echo "Invalid option."; fi
+    done
+fi
 
 # --- 5. RUN CARDINALITY ESTIMATION ---
 card_out_dir="dispatch_output/cardinality_estimation_outputs/${solver}-results/${solver}-results_${dataset_name}_${reads}_${timestamp}"
@@ -194,3 +237,8 @@ for file in csv_files[1:]:
 df_final.to_csv('$final_csv', index=False)
 "
 echo "Process complete! Final report: $final_csv"
+
+# Machine-readable result paths for orchestration scripts
+echo "DISPATCH_SOLVER_DIR=$solver_run_dir"
+echo "DISPATCH_CARD_DIR=$card_out_dir"
+echo "DISPATCH_FINAL_CSV=$final_csv"

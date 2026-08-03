@@ -25,4 +25,12 @@ RUN python -m pip install --upgrade pip setuptools wheel \
     && pip install --no-cache-dir -r /tmp/requirements.txt \
     && pip check
 
+# Bake the project sources into the image so a running experiment cannot be
+# affected by files on the host. Only /workspace/results is mounted back out
+# at run time (see docker-compose.yml). After editing sources, rebuild with
+# `docker compose build`.
+COPY . /workspace
+
+RUN mkdir -p /workspace/results
+
 CMD ["/bin/bash"]

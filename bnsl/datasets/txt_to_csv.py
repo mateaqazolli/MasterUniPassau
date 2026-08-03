@@ -1,10 +1,11 @@
 import csv
+import os
 
 # =========================
-# CONFIG
+# CONFIG (overridable via environment for scripted runs)
 # =========================
-input_txt_file = "../../bnsl-qa/qa-datasets/WetGrass.txt"
-output_csv_file = "data/WetGrass_variance_zero.csv"
+input_txt_file = os.environ.get("INPUT_TXT_FILE", "../../bnsl-qa/qa-datasets/WetGrass.txt")
+output_csv_file = os.environ.get("OUTPUT_CSV_FILE", "data/WetGrass_variance_zero.csv")
 
 
 columns = ["Cloud", "Sprinkler", "Rain", "WetGrass"]

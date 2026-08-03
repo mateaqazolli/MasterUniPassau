@@ -26,7 +26,7 @@ os.makedirs(output_dir, exist_ok=True)
 # ==========================================
 print(f"Loading dataset for Graph {graph_index}...")
 # Note: Ensure the CSV filename matches your local file
-df = pd.read_csv("../bnsl/datasets/data/WetGrass_variance_zero.csv")
+df = pd.read_csv(os.environ.get("CE_DATASET_CSV", "../bnsl/datasets/data/WetGrass_variance_zero.csv"))
 
 df.columns = ['cloud', 'sprinkler', 'rain', 'wetgrass']
 for col in df.columns:

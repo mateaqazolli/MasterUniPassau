@@ -8,7 +8,7 @@ import graphviz
 # ==========================================
 # 1. CONFIGURATION
 # ==========================================
-CSV_FILE = "NHANES_age_prediction"
+CSV_FILE = os.environ.get("CSV_FILE", "NHANES_age_prediction")
 DATA_PATH = f"datasets/data/{CSV_FILE}.csv"
 OUTPUT_DIR = "../graphs"
 RESULTS_DIR = "card_results"

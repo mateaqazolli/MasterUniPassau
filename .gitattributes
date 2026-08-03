@@ -3,3 +3,9 @@
 *.yml text eol=lf
 *.yaml text eol=lf
 Dockerfile text eol=lf
+# .env configs are sourced by bash inside the Linux container; .py runs
+# there too — CRLF from a Windows checkout would corrupt them
+*.env text eol=lf
+*.py text eol=lf
+# Windows batch files require CRLF
+*.bat text eol=crlf

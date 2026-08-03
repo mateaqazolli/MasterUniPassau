@@ -1,3 +1,8 @@
+# All versions are intentionally frozen: this environment is part of the
+# thesis reproduction package, and upgrading any package (or the pinned
+# python/postgres base images in docker/) can change the numerical results.
+# Do not upgrade.
+
 # Core numerical and data-processing stack
 numpy==2.4.2
 pandas==3.0.0

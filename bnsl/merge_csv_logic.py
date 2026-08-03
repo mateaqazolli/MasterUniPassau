@@ -145,7 +145,9 @@ for c in rng_cols:
 final_csv_df = pd.DataFrame(csv_dict)
 
 timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
-output_base = f"combined_results_{dataset_name}_{timestamp}"
+output_dir = os.environ.get("MERGE_OUTPUT_DIR", ".")
+os.makedirs(output_dir, exist_ok=True)
+output_base = os.path.join(output_dir, f"combined_results_{dataset_name}_{timestamp}")
 
 final_csv_df.to_csv(f"{output_base}.csv", index=False)
 print(f"CSV saved: {output_base}.csv")

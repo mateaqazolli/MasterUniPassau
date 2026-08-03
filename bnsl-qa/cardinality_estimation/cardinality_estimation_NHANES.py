@@ -28,7 +28,7 @@ os.makedirs(output_dir, exist_ok=True)
 # ==========================================
 # 1. LOAD AND PREPARE NHANES DATASET
 # ==========================================
-dataset_path = "../bnsl/datasets/data/NHANES_age_prediction.csv"
+dataset_path = os.environ.get("CE_DATASET_CSV", "../bnsl/datasets/data/NHANES_age_prediction.csv")
 try:
     df_raw = pd.read_csv(dataset_path)
 except Exception as e:

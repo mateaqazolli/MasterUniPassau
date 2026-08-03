@@ -8,7 +8,7 @@ import graphviz
 # ==========================================
 # 1. CONFIGURATION
 # ==========================================
-CSV_FILE = "DataMining_MarketBasket_10K"  # Base name without .csv extension
+CSV_FILE = os.environ.get("CSV_FILE", "DataMining_MarketBasket_10K")  # Base name without .csv extension
 DATA_PATH = f"datasets/data/{CSV_FILE}.csv"
 OUTPUT_DIR = "../output_bn"
 RESULTS_DIR = "card_results"
